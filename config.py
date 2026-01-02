@@ -73,4 +73,6 @@ class Config:
     }
     
     # GGP Range for matchmaking
-    GGP_RANGE = 250
+    GGP_RANGE = 250    
+    # Discord settings
+    DISCORD_SERVER_URL = 'https://discord.gg/laddergg'  # Replace with your actual Discord server invite URL

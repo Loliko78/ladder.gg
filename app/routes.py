@@ -145,11 +145,8 @@ def index():
         return render_template('index.html', stats=stats)
     return redirect(url_for('auth.login'))
 
-@main_bp.route('/profile')
-@login_required
-def profile():
-    """User profile page"""
-    user = current_user
+def _render_profile(user):
+    """Helper function to render user profile"""
     user_servers = UserServer.query.filter_by(user_id=user.id).all()
     friends_list = User.query.join(Friend, Friend.friend_id == User.id).filter(Friend.user_id == user.id).all()
     
@@ -159,12 +156,29 @@ def profile():
     if current_lobby_member:
         current_lobby = Lobby.query.get(current_lobby_member.lobby_id)
     
+    # Check if viewing own profile
+    is_own_profile = user.id == current_user.id
+    
     return render_template('profile.html',
                          user=user,
                          user_servers=user_servers,
                          friends=friends_list,
                          all_servers=Config.SERVERS,
-                         current_lobby=current_lobby)
+                         current_lobby=current_lobby,
+                         is_own_profile=is_own_profile)
+
+@main_bp.route('/profile')
+@login_required
+def profile():
+    """User profile page - current user"""
+    return _render_profile(current_user)
+
+@main_bp.route('/profile/<int:user_id>')
+@login_required
+def view_user_profile(user_id):
+    """View any user's profile page"""
+    user = User.query.get_or_404(user_id)
+    return _render_profile(user)
 
 @main_bp.route('/profile/edit', methods=['GET', 'POST'])
 @login_required
@@ -555,21 +569,63 @@ def review_lobby_screenshot(screenshot_id):
     action = data.get('action')  # 'approve' or 'reject'
     notes = data.get('notes', '')
     
+    # Сохраняем значения перед удалением объекта из сессии
+    image_path = screenshot.image_path
+    user = screenshot.user
+    lobby = screenshot.lobby
+    result = screenshot.result
+    
+    # Обновляем метаданные скриншота ПЕРЕД удалением лобби
+    screenshot.reviewed_by = current_user.id
+    screenshot.reviewed_at = datetime.utcnow()
+    screenshot.notes = notes
+    
     if action == 'approve':
         screenshot.status = 'approved'
-        # Обновляем статистику пользователя
-        user = screenshot.user
-        if screenshot.result == 'win':
-            user.update_ggp(Config.GGP_WIN)
-            for server in user.servers:
-                server.wins += 1
-        elif screenshot.result == 'loss':
-            user.update_ggp(Config.GGP_LOSS)
-            for server in user.servers:
-                server.losses += 1
+        
+        # Для режимов 1х1 - обновляем обоих игроков
+        if lobby and lobby.mode == '1x1':
+            # Находим другого игрока в лобби
+            other_members = LobbyMember.query.filter(
+                LobbyMember.lobby_id == lobby.id,
+                LobbyMember.user_id != user.id
+            ).all()
+            
+            if other_members:
+                other_user = other_members[0].user
+                
+                if result == 'win':
+                    # Победитель получает очки
+                    user.update_ggp(Config.GGP_WIN)
+                    for server in user.servers:
+                        server.wins += 1
+                    
+                    # Проигравший теряет очки
+                    other_user.update_ggp(Config.GGP_LOSS)
+                    for server in other_user.servers:
+                        server.losses += 1
+                elif result == 'loss':
+                    # Проигравший теряет очки
+                    user.update_ggp(Config.GGP_LOSS)
+                    for server in user.servers:
+                        server.losses += 1
+                    
+                    # Победитель получает очки
+                    other_user.update_ggp(Config.GGP_WIN)
+                    for server in other_user.servers:
+                        server.wins += 1
+        else:
+            # Для других режимов - обновляем только отправившего скриншот
+            if result == 'win':
+                user.update_ggp(Config.GGP_WIN)
+                for server in user.servers:
+                    server.wins += 1
+            elif result == 'loss':
+                user.update_ggp(Config.GGP_LOSS)
+                for server in user.servers:
+                    server.losses += 1
         
         # Удаляем лобби после одобрения результата
-        lobby = screenshot.lobby
         if lobby:
             # Удаляем все связанные записи
             LobbyMember.query.filter_by(lobby_id=lobby.id).delete()
@@ -582,12 +638,11 @@ def review_lobby_screenshot(screenshot_id):
     elif action == 'reject':
         screenshot.status = 'rejected'
         # Удаляем лобби при отклонении результата
-        lobby = screenshot.lobby
         if lobby:
-            # Удаляем все связанные записи
+            # Удаляем все связанные записи (но НЕ скриншот)
             LobbyMember.query.filter_by(lobby_id=lobby.id).delete()
             LobbyMessage.query.filter_by(lobby_id=lobby.id).delete()
-            LobbyScreenshot.query.filter_by(lobby_id=lobby.id).delete()
+            # НЕ удаляем LobbyScreenshot здесь
             LobbyBan.query.filter_by(lobby_id=lobby.id).delete()
             LobbyInvite.query.filter_by(lobby_id=lobby.id).delete()
             # Удаляем само лобби
@@ -596,17 +651,13 @@ def review_lobby_screenshot(screenshot_id):
         return jsonify({'success': False, 'error': 'Invalid action'}), 400
     
     # Удаляем физический файл скриншота
-    if screenshot.image_path:
-        screenshot_file_path = os.path.join(Config.UPLOAD_FOLDER, screenshot.image_path)
+    if image_path:
+        screenshot_file_path = os.path.join(Config.UPLOAD_FOLDER, image_path)
         try:
             if os.path.exists(screenshot_file_path):
                 os.remove(screenshot_file_path)
         except Exception as e:
             print(f"Ошибка при удалении файла {screenshot_file_path}: {e}")
-    
-    screenshot.reviewed_by = current_user.id
-    screenshot.reviewed_at = datetime.utcnow()
-    screenshot.notes = notes
     
     db.session.commit()
     
@@ -1178,6 +1229,143 @@ def api_lobby_message(lobby_id):
         'username': current_user.username,
         'message': message_text,
         'created_at': message.created_at.isoformat()
+    })
+
+@api_bp.route('/lobby/<int:lobby_id>/move-team', methods=['POST'])
+@api_login_required
+def api_move_to_team(lobby_id):
+    """Move player to a different team"""
+    lobby = Lobby.query.get_or_404(lobby_id)
+    
+    # Check if user is creator
+    if lobby.creator_id != current_user.id:
+        return jsonify({'error': 'Только создатель лобби может переводить игроков'}), 403
+    
+    data = request.get_json()
+    user_id = data.get('user_id')
+    team_number = data.get('team_number')
+    
+    if not user_id or team_number not in [1, 2]:
+        return jsonify({'error': 'Invalid parameters'}), 400
+    
+    # Check if user is in this lobby
+    member = LobbyMember.query.filter_by(lobby_id=lobby_id, user_id=user_id).first()
+    if not member:
+        return jsonify({'error': 'Игрок не в этом лобби'}), 404
+    
+    # For 1x1 mode, teams don't apply
+    if lobby.mode == '1x1':
+        return jsonify({'error': '1x1 режим не поддерживает команды'}), 400
+    
+    # Move player to team
+    member.team_number = team_number
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'user_id': user_id,
+        'team_number': team_number
+    })
+
+# ==================== LOBBY AUTO-UPDATE ENDPOINTS ====================
+
+@api_bp.route('/lobby/<int:lobby_id>/members', methods=['GET'])
+@api_login_required
+def api_lobby_members(lobby_id):
+    """Get updated list of lobby members"""
+    lobby = Lobby.query.get_or_404(lobby_id)
+    
+    members = LobbyMember.query.filter_by(lobby_id=lobby_id).order_by(LobbyMember.joined_at).all()
+    
+    members_data = []
+    for member in members:
+        members_data.append({
+            'user_id': member.user.id,
+            'username': member.user.username,
+            'level': member.user.level,
+            'ggp': member.user.ggp,
+            'is_creator': member.user.id == lobby.creator_id,
+            'team_number': member.team_number,
+            'joined_at': member.joined_at.isoformat()
+        })
+    
+    return jsonify({
+        'success': True,
+        'members': members_data,
+        'current_players': lobby.current_players,
+        'max_players': lobby.max_players,
+        'mode': lobby.mode,
+        'status': lobby.status
+    })
+
+@api_bp.route('/lobby/<int:lobby_id>/messages', methods=['GET'])
+@api_login_required
+def api_lobby_messages(lobby_id):
+    """Get updated list of lobby messages"""
+    lobby = Lobby.query.get_or_404(lobby_id)
+    
+    # Check if user is member
+    is_member = LobbyMember.query.filter_by(lobby_id=lobby_id, user_id=current_user.id).first()
+    if not is_member:
+        return jsonify({'error': 'Вы не в этом лобби'}), 403
+    
+    # Get messages since a certain ID (for incremental updates)
+    since_id = request.args.get('since_id', 0, type=int)
+    
+    if since_id > 0:
+        messages = LobbyMessage.query.filter_by(lobby_id=lobby_id).filter(LobbyMessage.id > since_id).order_by(LobbyMessage.created_at).all()
+    else:
+        messages = LobbyMessage.query.filter_by(lobby_id=lobby_id).order_by(LobbyMessage.created_at).all()
+    
+    messages_data = []
+    for message in messages:
+        messages_data.append({
+            'id': message.id,
+            'user_id': message.user.id,
+            'username': message.user.username,
+            'message': message.message,
+            'created_at': message.created_at.isoformat()
+        })
+    
+    return jsonify({
+        'success': True,
+        'messages': messages_data,
+        'total_messages': LobbyMessage.query.filter_by(lobby_id=lobby_id).count()
+    })
+
+@api_bp.route('/ticket/<int:ticket_id>/messages', methods=['GET'])
+@api_login_required
+def api_ticket_messages(ticket_id):
+    """Get updated messages for support ticket"""
+    ticket = SupportTicket.query.get_or_404(ticket_id)
+    
+    # Check if user has access to this ticket
+    if ticket.creator_id != current_user.id and current_user.admin_level < 1:
+        return jsonify({'error': 'У вас нет доступа к этому тикету'}), 403
+    
+    # Get messages since a certain ID
+    since_id = request.args.get('since_id', 0, type=int)
+    
+    if since_id > 0:
+        messages = SupportMessage.query.filter_by(ticket_id=ticket_id).filter(SupportMessage.id > since_id).order_by(SupportMessage.created_at).all()
+    else:
+        messages = SupportMessage.query.filter_by(ticket_id=ticket_id).order_by(SupportMessage.created_at).all()
+    
+    messages_data = []
+    for message in messages:
+        messages_data.append({
+            'id': message.id,
+            'user_id': message.user.id,
+            'username': message.user.username,
+            'message': message.message,
+            'created_at': message.created_at.isoformat()
+        })
+    
+    return jsonify({
+        'success': True,
+        'messages': messages_data,
+        'status': ticket.status,
+        'total_messages': SupportMessage.query.filter_by(ticket_id=ticket_id).count()
     })
 
 # ==================== MAJESTIC SCREENSHOT ANALYSIS ====================

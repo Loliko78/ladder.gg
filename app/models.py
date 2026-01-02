@@ -210,6 +210,7 @@ class LobbyMember(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     lobby_id = db.Column(db.Integer, db.ForeignKey('lobbies.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    team_number = db.Column(db.Integer, default=1)  # For team games: 1 or 2 (for 2x2, 3x3, 5x5)
     joined_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     user = db.relationship('User', backref='lobby_memberships')
@@ -217,7 +218,7 @@ class LobbyMember(db.Model):
     __table_args__ = (db.UniqueConstraint('lobby_id', 'user_id', name='unique_lobby_member'),)
     
     def __repr__(self):
-        return f'<LobbyMember {self.lobby_id}-{self.user_id}>'
+        return f'<LobbyMember {self.lobby_id}-{self.user_id} Team:{self.team_number}>'
 
 
 class LobbyMessage(db.Model):

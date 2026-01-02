@@ -3,7 +3,7 @@
 {% block title %}Лобби: {{ lobby.name }} - Ladder.gg{% endblock %}
 
 {% block content %}
-<div class="container lobby-room">
+<div class="container lobby-room" data-lobby-id="{{ lobby.id }}" data-lobby-mode="{{ lobby.mode }}" data-is-creator="{{ 'true' if is_creator else 'false' }}" data-current-user-id="{{ current_user.id }}">
     <div class="lobby-header">
         <div class="header-info">
             <h1>🎮 {{ lobby.name }}</h1>
@@ -97,29 +97,6 @@
                         </div>
                     {% endfor %}
                 </div>
-            </section>
-
-            <!-- Чат -->
-            <section class="lobby-chat">
-                <h2>💬 Чат</h2>
-                <div class="chat-messages" id="chatMessages">
-                    {% for message in messages %}
-                        <div class="chat-message">
-                            <div class="message-author">{{ message.user.username }}</div>
-                            <div class="message-time">{{ message.created_at.strftime('%H:%M') }}</div>
-                            <div class="message-text">{{ message.message }}</div>
-                        </div>
-                    {% endfor %}
-                </div>
-                
-                {% if is_member %}
-                <form class="chat-form" id="chatForm" onsubmit="sendMessage(event)">
-                    <input type="text" id="messageInput" placeholder="Напишите сообщение..." required>
-                    <button type="submit" class="btn btn-small">Отправить</button>
-                </form>
-                {% else %}
-                <p class="chat-placeholder">Присоединитесь к лобби, чтобы писать сообщения</p>
-                {% endif %}
             </section>
         </div>
     </div>
@@ -361,93 +338,6 @@
     display: inline-block;
 }
 
-.lobby-chat {
-    background: #2a2a2a;
-    padding: 20px;
-    border-radius: 8px;
-    border: 1px solid #404040;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.lobby-chat h2 {
-    margin: 0 0 15px 0;
-    color: #e0e0e0;
-    font-size: 18px;
-}
-
-.chat-messages {
-    flex: 1;
-    background: #1a1a1a;
-    border: 1px solid #404040;
-    border-radius: 6px;
-    padding: 15px;
-    overflow-y: auto;
-    margin-bottom: 12px;
-    max-height: 300px;
-}
-
-.chat-message {
-    margin-bottom: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #404040;
-}
-
-.chat-message:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
-}
-
-.message-author {
-    color: #ff6b6b;
-    font-weight: 600;
-    font-size: 13px;
-}
-
-.message-time {
-    color: #888;
-    font-size: 11px;
-    display: inline-block;
-    margin-left: 8px;
-}
-
-.message-text {
-    color: #d0d0d0;
-    margin-top: 4px;
-    font-size: 14px;
-    line-height: 1.4;
-}
-
-.chat-form {
-    display: flex;
-    gap: 8px;
-}
-
-.chat-form input {
-    flex: 1;
-    padding: 10px;
-    background: #1a1a1a;
-    color: #e0e0e0;
-    border: 1px solid #404040;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-.chat-form input:focus {
-    outline: none;
-    border-color: #c0272d;
-    box-shadow: 0 0 4px rgba(192, 39, 45, 0.2);
-}
-
-.chat-placeholder {
-    text-align: center;
-    color: #888;
-    padding: 20px;
-    font-size: 13px;
-}
-
 .btn {
     padding: 10px 16px;
     background: #c0272d;
@@ -502,42 +392,6 @@
 </style>
 
 <script>
-function sendMessage(event) {
-    event.preventDefault();
-    
-    const messageInput = document.getElementById('messageInput');
-    const message = messageInput.value.trim();
-    
-    if (!message) return;
-    
-    fetch('/api/lobby/{{ lobby.id }}/message', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ message })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            messageInput.value = '';
-            // Добавить сообщение в чат
-            const chatMessages = document.getElementById('chatMessages');
-            const msgEl = document.createElement('div');
-            msgEl.className = 'chat-message';
-            msgEl.innerHTML = `
-                <div class="message-author">${data.username}</div>
-                <div class="message-time">${new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'})}</div>
-                <div class="message-text">${data.message}</div>
-            `;
-            chatMessages.appendChild(msgEl);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        } else {
-            alert('❌ Ошибка: ' + (data.error || 'Не удалось отправить сообщение'));
-        }
-    })
-    .catch(err => alert('❌ Ошибка сети: ' + err.message));
-}
 
 function joinCurrentLobby() {
     fetch('/api/lobby/{{ lobby.id }}/join', {

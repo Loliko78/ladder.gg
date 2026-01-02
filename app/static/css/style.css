@@ -72,6 +72,9 @@ main {
 .nav-brand {
     font-size: 24px;
     font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 15px;
 }
 
 .logo {
@@ -91,6 +94,30 @@ main {
 
 .logo:hover {
     color: var(--gray-300);
+}
+
+.discord-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #5865F2;
+    color: white;
+    text-decoration: none;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.discord-link:hover {
+    background-color: #4752C4;
+    transform: scale(1.1);
+}
+
+.discord-icon {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
 }
 
 .nav-menu {

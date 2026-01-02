@@ -26,7 +26,7 @@
                 <tr class="user-row">
                     <td>{{ (users.page - 1) * 50 + loop.index }}</td>
                     <td>
-                        <a href="{{ url_for('main.profile') }}">{{ user.username }}</a>
+                        <a href="{{ url_for('main.view_user_profile', user_id=user.id) }}">{{ user.username }}</a>
                     </td>
                     <td>{{ user.ggp }}</td>
                     <td>

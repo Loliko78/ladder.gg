@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container">
+<div class="container" data-ticket-id="{{ ticket.id }}">
     <div class="ticket-detail">
         <div class="ticket-header">
             <div>
@@ -9,7 +9,7 @@
                 <p class="ticket-meta">
                     Создан: <strong>{{ ticket.created_at.strftime('%d.%m.%Y %H:%M') }}</strong> | 
                     <span class="badge badge-{{ ticket.priority }}">{{ ticket.priority.upper() }}</span>
-                    <span class="badge badge-{{ ticket.status }}">{{ ticket.status.upper() }}</span>
+                    <span class="ticket-status badge-{{ ticket.status }}">{{ ticket.status.upper() }}</span>
                 </p>
                 {% if ticket.assigned_admin %}
                 <p class="assigned-admin">
@@ -42,10 +42,10 @@
         <div class="messages-section">
             <h3>Сообщения</h3>
             
-            <div class="messages-list">
+            <div class="messages-list" id="ticket-messages">
                 {% if messages %}
                     {% for message in messages %}
-                    <div class="message-item">
+                    <div class="ticket-message" data-message-id="{{ message.id }}">
                         <div class="message-header">
                             <strong>{{ message.user.username }}</strong>
                             {% if message.user.admin_level >= 1 %}
