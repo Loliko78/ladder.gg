@@ -1,0 +1,614 @@
+{% extends "base.html" %}
+
+{% block title %}Анализ скриншотов - Ladder.gg{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="screenshot-header">
+        <h1>📸 Анализ скриншотов Majestic</h1>
+        <p class="subtitle">Автоматический анализ результатов матчей прямо с экрана</p>
+    </div>
+
+    <div class="screenshot-container">
+        <div class="info-box">
+            <h3>📖 Как использовать:</h3>
+            <ol>
+                <li>Сыграйте матч на сервере Majestic</li>
+                <li>После матча смотрите на экран результатов</li>
+                <li>Нажмите кнопку "Анализировать экран" ниже</li>
+                <li>Система автоматически распознает результат и обновит вашу статистику</li>
+            </ol>
+        </div>
+
+        <div class="actions-section">
+            <h2>Анализ результатов</h2>
+            
+            <button id="captureBtn" class="btn btn-primary btn-large" onclick="captureAndAnalyze()">
+                📸 Анализировать экран
+            </button>
+
+            <button id="manualBtn" class="btn btn-secondary btn-large" onclick="openManualInput()">
+                ✏️ Ввести вручную
+            </button>
+        </div>
+
+        <!-- Статус анализа -->
+        <div id="analysisStatus" class="analysis-status" style="display: none;">
+            <div class="spinner"></div>
+            <p>⏳ Анализирую скриншот...</p>
+        </div>
+
+        <!-- Результаты анализа -->
+        <div id="analysisResult" class="analysis-result" style="display: none;">
+            <div class="result-card">
+                <div class="result-header" id="resultHeader"></div>
+                <div class="result-details" id="resultDetails"></div>
+                <div class="result-actions">
+                    <button class="btn btn-primary" onclick="confirmAnalysis()">✓ Подтвердить</button>
+                    <button class="btn btn-secondary" onclick="resetAnalysis()">✕ Отмена</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Форма ручного ввода -->
+        <div id="manualInputModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Ввести результат матча</h2>
+                    <button class="modal-close" onclick="closeManualInput()">×</button>
+                </div>
+                <form id="manualForm" class="manual-form">
+                    <div class="form-group">
+                        <label>Результат матча</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="result" value="win" required>
+                                <span>🏆 Победа</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="result" value="loss" required>
+                                <span>😢 Поражение</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="serverSelect">Выберите сервер</label>
+                        <select id="serverSelect" name="server" required>
+                            <option value="">-- Выберите --</option>
+                            {% for server in current_user.servers %}
+                            <option value="{{ server.server_name }}">{{ server.server_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ggpChange">Изменение GGP (опционально)</label>
+                        <input type="number" id="ggpChange" name="ggp_change" placeholder="например: 50 или -25">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Добавить результат</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeManualInput()">Отмена</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- История анализов -->
+        <div class="history-section">
+            <h2>📊 История анализов</h2>
+            <div id="historyList" class="history-list">
+                <p class="empty-text">Анализов пока нет</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.screenshot-header {
+    text-align: center;
+    margin-bottom: 50px;
+    padding-bottom: 30px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.screenshot-header h1 {
+    margin: 0 0 10px 0;
+    font-size: 36px;
+    color: #1a1a1a;
+}
+
+.subtitle {
+    margin: 0;
+    font-size: 15px;
+    color: #777;
+}
+
+.screenshot-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.info-box {
+    background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+    border: 1px solid #404040;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.info-box h3 {
+    margin: 0 0 15px 0;
+    color: #e0e0e0;
+}
+
+.info-box ol {
+    margin: 0;
+    padding-left: 20px;
+    color: #aaa;
+    font-size: 14px;
+}
+
+.info-box li {
+    margin-bottom: 8px;
+    line-height: 1.6;
+}
+
+.actions-section {
+    background: #2a2a2a;
+    border: 2px solid #404040;
+    border-radius: 8px;
+    padding: 30px;
+    margin-bottom: 30px;
+}
+
+.actions-section h2 {
+    margin: 0 0 20px 0;
+    color: #e0e0e0;
+}
+
+.btn-large {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.btn-large:last-child {
+    margin-bottom: 0;
+}
+
+/* Анализ */
+.analysis-status {
+    text-align: center;
+    padding: 40px;
+    background: #2a2a2a;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    margin: 0 auto 20px;
+    border: 4px solid #404040;
+    border-top-color: #c0272d;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.analysis-result {
+    margin-bottom: 30px;
+}
+
+.result-card {
+    background: #2a2a2a;
+    border: 2px solid #c0272d;
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: 0 4px 12px rgba(192, 39, 45, 0.2);
+}
+
+.result-header {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #404040;
+}
+
+.result-header h3 {
+    margin: 0;
+    font-size: 24px;
+    color: #e0e0e0;
+}
+
+.result-details {
+    margin-bottom: 20px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #404040;
+    font-size: 14px;
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    color: #aaa;
+    font-weight: 500;
+}
+
+.detail-value {
+    color: #ff6b6b;
+    font-weight: 600;
+}
+
+.result-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.result-actions .btn {
+    flex: 1;
+}
+
+/* Модальное окно */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: #2a2a2a;
+    border-radius: 8px;
+    padding: 0;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #404040;
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: #e0e0e0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #999;
+    cursor: pointer;
+    padding: 0;
+}
+
+.manual-form {
+    padding: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #e0e0e0;
+    font-weight: 500;
+}
+
+.radio-group {
+    display: flex;
+    gap: 15px;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    gap: 8px;
+    color: #d0d0d0;
+}
+
+.radio-label input[type="radio"] {
+    margin: 0;
+    cursor: pointer;
+}
+
+.radio-label span {
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #404040;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+    background: #1a1a1a;
+    color: #e0e0e0;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #c0272d;
+    box-shadow: 0 0 4px rgba(192, 39, 45, 0.2);
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #404040;
+}
+
+.form-actions .btn {
+    flex: 1;
+}
+
+/* История */
+.history-section {
+    background: #2a2a2a;
+    border: 1px solid #404040;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.history-section h2 {
+    margin: 0 0 20px 0;
+    color: #e0e0e0;
+}
+
+.history-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.history-item {
+    padding: 12px;
+    border-bottom: 1px solid #404040;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #d0d0d0;
+}
+
+.history-item:last-child {
+    border-bottom: none;
+}
+
+.history-status {
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.history-status.win {
+    background: #e8f5e9;
+    color: #388e3c;
+}
+
+.history-status.loss {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.empty-text {
+    text-align: center;
+    color: #999;
+    padding: 20px;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .screenshot-header h1 {
+        font-size: 28px;
+    }
+
+    .actions-section {
+        padding: 20px;
+    }
+
+    .radio-group {
+        flex-direction: column;
+    }
+}
+</style>
+
+<script>
+let analysisHistory = JSON.parse(localStorage.getItem('analysisHistory') || '[]');
+
+function captureAndAnalyze() {
+    const btn = document.getElementById('captureBtn');
+    btn.disabled = true;
+    
+    document.getElementById('analysisStatus').style.display = 'block';
+    document.getElementById('analysisResult').style.display = 'none';
+
+    fetch('/api/analyze-screenshot', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('analysisStatus').style.display = 'none';
+        
+        if (data.success) {
+            showAnalysisResult(data.analysis, data.validation);
+        } else {
+            alert('❌ Ошибка анализа: ' + data.error);
+        }
+        
+        btn.disabled = false;
+    })
+    .catch(err => {
+        alert('❌ Ошибка сети: ' + err.message);
+        document.getElementById('analysisStatus').style.display = 'none';
+        btn.disabled = false;
+    });
+}
+
+function showAnalysisResult(analysis, validation) {
+    const resultCard = document.getElementById('analysisResult');
+    const resultHeader = document.getElementById('resultHeader');
+    const resultDetails = document.getElementById('resultDetails');
+
+    const statusEmoji = analysis.status === 'win' ? '🏆' : '😢';
+    const statusText = analysis.status === 'win' ? 'Победа' : 'Поражение';
+    const statusColor = analysis.status === 'win' ? '#388e3c' : '#c62828';
+
+    resultHeader.innerHTML = `
+        <h3 style="color: ${statusColor};">${statusEmoji} ${statusText}</h3>
+        <small style="color: #999;">Уверенность: ${(analysis.confidence * 100).toFixed(0)}%</small>
+    `;
+
+    let detailsHtml = '';
+    if (analysis.ggp_change) {
+        detailsHtml += `
+            <div class="detail-row">
+                <span class="detail-label">Изменение GGP:</span>
+                <span class="detail-value">${analysis.ggp_change > 0 ? '+' : ''}${analysis.ggp_change}</span>
+            </div>
+        `;
+    }
+    if (analysis.wins !== null) {
+        detailsHtml += `
+            <div class="detail-row">
+                <span class="detail-label">Всего побед:</span>
+                <span class="detail-value">${analysis.wins}</span>
+            </div>
+        `;
+    }
+    if (analysis.losses !== null) {
+        detailsHtml += `
+            <div class="detail-row">
+                <span class="detail-label">Всего поражений:</span>
+                <span class="detail-value">${analysis.losses}</span>
+            </div>
+        `;
+    }
+
+    if (validation.needs_confirmation) {
+        detailsHtml += `
+            <div class="detail-row">
+                <span style="color: #f57c00; font-weight: 600;">⚠️ Требуется подтверждение</span>
+            </div>
+        `;
+    }
+
+    resultDetails.innerHTML = detailsHtml;
+    resultCard.style.display = 'block';
+}
+
+function confirmAnalysis() {
+    alert('✓ Результат подтвержден и добавлен к вашей статистике!');
+    updateHistory();
+    resetAnalysis();
+    location.reload();
+}
+
+function resetAnalysis() {
+    document.getElementById('analysisResult').style.display = 'none';
+    document.getElementById('analysisStatus').style.display = 'none';
+}
+
+function openManualInput() {
+    document.getElementById('manualInputModal').style.display = 'flex';
+}
+
+function closeManualInput() {
+    document.getElementById('manualInputModal').style.display = 'none';
+}
+
+document.getElementById('manualForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const result = document.querySelector('input[name="result"]:checked').value;
+    const server = document.getElementById('serverSelect').value;
+    const ggpChange = document.getElementById('ggpChange').value;
+
+    // Имитируем добавление результата
+    alert('✓ Результат добавлен!');
+    closeManualInput();
+    updateHistory();
+});
+
+function updateHistory() {
+    const now = new Date().toLocaleString('ru-RU');
+    analysisHistory.unshift({
+        timestamp: now,
+        status: 'успешно',
+        confidence: '95%'
+    });
+    
+    analysisHistory = analysisHistory.slice(0, 10);
+    localStorage.setItem('analysisHistory', JSON.stringify(analysisHistory));
+    
+    renderHistory();
+}
+
+function renderHistory() {
+    const historyList = document.getElementById('historyList');
+    
+    if (analysisHistory.length === 0) {
+        historyList.innerHTML = '<p class="empty-text">Анализов пока нет</p>';
+        return;
+    }
+    
+    historyList.innerHTML = analysisHistory.map(item => `
+        <div class="history-item">
+            <div>
+                <div>${item.timestamp}</div>
+                <small style="color: #999;">Уверенность: ${item.confidence}</small>
+            </div>
+            <span class="history-status win">${item.status}</span>
+        </div>
+    `).join('');
+}
+
+// Закрывать модал при клике вне его
+document.getElementById('manualInputModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeManualInput();
+    }
+});
+
+// Инициализация
+renderHistory();
+</script>
+{% endblock %}

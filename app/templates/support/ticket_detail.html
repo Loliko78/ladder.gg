@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="ticket-detail">
+        <div class="ticket-header">
+            <div>
+                <h2>Тикет #{{ ticket.id }}: {{ ticket.subject }}</h2>
+                <p class="ticket-meta">
+                    Создан: <strong>{{ ticket.created_at.strftime('%d.%m.%Y %H:%M') }}</strong> | 
+                    <span class="badge badge-{{ ticket.priority }}">{{ ticket.priority.upper() }}</span>
+                    <span class="badge badge-{{ ticket.status }}">{{ ticket.status.upper() }}</span>
+                </p>
+                {% if ticket.assigned_admin %}
+                <p class="assigned-admin">
+                    Назначен: <strong>{{ ticket.assigned_admin.username }}</strong>
+                </p>
+                {% endif %}
+            </div>
+            {% if current_user.admin_level >= 1 %}
+            <div class="admin-actions">
+                <form method="POST" action="{{ url_for('admin.update_ticket_status', ticket_id=ticket.id) }}" class="status-form">
+                    <select name="status" class="form-control-small">
+                        <option value="open" {% if ticket.status == 'open' %}selected{% endif %}>Открыт</option>
+                        <option value="in_progress" {% if ticket.status == 'in_progress' %}selected{% endif %}>В процессе</option>
+                        <option value="resolved" {% if ticket.status == 'resolved' %}selected{% endif %}>Решён</option>
+                        <option value="closed" {% if ticket.status == 'closed' %}selected{% endif %}>Закрыт</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary-small">Изменить статус</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="ticket-description">
+            <h3>Описание</h3>
+            <div class="description-content">
+                {{ ticket.description }}
+            </div>
+        </div>
+
+        <div class="messages-section">
+            <h3>Сообщения</h3>
+            
+            <div class="messages-list">
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="message-item">
+                        <div class="message-header">
+                            <strong>{{ message.user.username }}</strong>
+                            {% if message.user.admin_level >= 1 %}
+                                <span class="badge badge-admin">Администратор</span>
+                            {% endif %}
+                            <span class="message-time">{{ message.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                        </div>
+                        <div class="message-content">
+                            {{ message.message }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="no-messages">Сообщений нет</p>
+                {% endif %}
+            </div>
+
+            {% if ticket.status != 'closed' %}
+            <div class="message-form">
+                <h4>Отправить сообщение</h4>
+                <form method="POST" action="{{ url_for('main.view_ticket', ticket_id=ticket.id) }}">
+                    <div class="form-group">
+                        <textarea name="message" class="form-control" rows="4" placeholder="Ваше сообщение..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Отправить</button>
+                </form>
+            </div>
+            {% else %}
+            <div class="ticket-closed-notice">
+                <p>⚠️ Этот тикет закрыт. Новые сообщения добавлять нельзя.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="ticket-actions">
+            {% if current_user.id == ticket.creator_id %}
+            <a href="{{ url_for('main.support') }}" class="btn btn-secondary">Вернуться к тикетам</a>
+            {% else %}
+            <a href="{{ url_for('admin.support_tickets') }}" class="btn btn-secondary">Вернуться к управлению</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.ticket-detail {
+    background: #2a2a2a;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.ticket-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #404040;
+}
+
+.ticket-meta {
+    color: #aaa;
+    font-size: 14px;
+    margin: 8px 0;
+}
+
+.assigned-admin {
+    color: #ff6b6b;
+    font-size: 14px;
+    margin: 8px 0;
+}
+
+.admin-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.status-form {
+    display: flex;
+    gap: 10px;
+}
+
+.form-control-small {
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.btn-primary-small {
+    padding: 6px 12px;
+    background-color: #c0272d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.btn-primary-small:hover {
+    background-color: #a02020;
+}
+
+.ticket-description {
+    margin-bottom: 30px;
+}
+
+.ticket-description h3 {
+    color: #e0e0e0;
+    margin-bottom: 10px;
+}
+
+.description-content {
+    background: #1a1a1a;
+    padding: 15px;
+    border-left: 4px solid #c0272d;
+    border-radius: 4px;
+    line-height: 1.6;
+    color: #d0d0d0;
+}
+
+.messages-section {
+    margin-bottom: 30px;
+}
+
+.messages-section h3 {
+    color: #e0e0e0;
+    margin-bottom: 15px;
+}
+
+.messages-list {
+    background: #1a1a1a;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 15px;
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #404040;
+}
+
+.message-item {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #404040;
+}
+
+.message-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.message-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.message-header strong {
+    color: #ff6b6b;
+    font-weight: 600;
+}
+
+.message-time {
+    color: #888;
+    font-size: 12px;
+    margin-left: auto;
+}
+
+.badge-admin {
+    background-color: #c0272d;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.message-content {
+    color: #d0d0d0;
+    line-height: 1.5;
+    background: #2a2a2a;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #404040;
+}
+
+.no-messages {
+    text-align: center;
+    color: #888;
+    padding: 20px;
+}
+
+.message-form {
+    background: #2a2a2a;
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid #404040;
+}
+
+.message-form h4 {
+    color: #e0e0e0;
+    margin-bottom: 12px;
+    margin-top: 0;
+}
+
+.message-form textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #404040;
+    border-radius: 4px;
+    font-family: 'Segoe UI', sans-serif;
+    resize: vertical;
+    background: #1a1a1a;
+    color: #e0e0e0;
+}
+
+.message-form textarea:focus {
+    outline: none;
+    border-color: #c0272d;
+    box-shadow: 0 0 5px rgba(192, 39, 45, 0.2);
+}
+
+.ticket-closed-notice {
+    background: #3a3a2a;
+    border: 1px solid #ffc107;
+    color: #ffd54f;
+    padding: 12px;
+    border-radius: 4px;
+    margin-top: 15px;
+}
+
+.ticket-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #404040;
+}
+
+@media (max-width: 768px) {
+    .ticket-header {
+        flex-direction: column;
+    }
+
+    .admin-actions {
+        margin-top: 15px;
+        width: 100%;
+    }
+
+    .status-form {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .form-control-small {
+        flex: 1;
+        min-width: 150px;
+    }
+}
+</style>
+{% endblock %}

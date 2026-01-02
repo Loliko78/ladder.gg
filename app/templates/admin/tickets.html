@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Тикеты поддержки - Ladder.gg{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Тикеты поддержки</h1>
+    
+    <div class="tickets-filters">
+        <a href="{{ url_for('admin.support_tickets', status='open') }}" class="btn {% if status == 'open' %}btn-primary{% else %}btn-secondary{% endif %}">Открытые</a>
+        <a href="{{ url_for('admin.support_tickets', status='in_progress') }}" class="btn {% if status == 'in_progress' %}btn-primary{% else %}btn-secondary{% endif %}">В процессе</a>
+        <a href="{{ url_for('admin.support_tickets', status='resolved') }}" class="btn {% if status == 'resolved' %}btn-primary{% else %}btn-secondary{% endif %}">Решенные</a>
+        <a href="{{ url_for('admin.support_tickets', status='all') }}" class="btn {% if status == 'all' %}btn-primary{% else %}btn-secondary{% endif %}">Все</a>
+    </div>
+
+    <table class="tickets-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Заголовок</th>
+                <th>От пользователя</th>
+                <th>Статус</th>
+                <th>Приоритет</th>
+                <th>Дата создания</th>
+                <th>Действие</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticket in tickets.items %}
+                <tr>
+                    <td>#{{ ticket.id }}</td>
+                    <td>{{ ticket.subject }}</td>
+                    <td>{{ ticket.creator.username }}</td>
+                    <td><span class="status-badge status-{{ ticket.status }}">{{ ticket.status }}</span></td>
+                    <td><span class="priority-badge priority-{{ ticket.priority }}">{{ ticket.priority }}</span></td>
+                    <td>{{ ticket.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                    <td><a href="{{ url_for('admin.ticket_detail', ticket_id=ticket.id) }}" class="btn btn-small">Открыть</a></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

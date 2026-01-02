@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}Управление лобби - Ladder.gg{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>🎮 Управление лобби</h1>
+    
+    <div class="lobbies-filters">
+        <a href="{{ url_for('admin.admin_lobbies', status='all') }}" class="btn {% if status_filter == 'all' %}btn-primary{% else %}btn-secondary{% endif %}">Все</a>
+        <a href="{{ url_for('admin.admin_lobbies', status='open') }}" class="btn {% if status_filter == 'open' %}btn-primary{% else %}btn-secondary{% endif %}">Открытые</a>
+        <a href="{{ url_for('admin.admin_lobbies', status='full') }}" class="btn {% if status_filter == 'full' %}btn-primary{% else %}btn-secondary{% endif %}">Полные</a>
+        <a href="{{ url_for('admin.admin_lobbies', status='started') }}" class="btn {% if status_filter == 'started' %}btn-primary{% else %}btn-secondary{% endif %}">Начатые</a>
+        <a href="{{ url_for('admin.admin_lobbies', status='finished') }}" class="btn {% if status_filter == 'finished' %}btn-primary{% else %}btn-secondary{% endif %}">Завершенные</a>
+    </div>
+
+    {% if lobbies.items %}
+        <table class="lobbies-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Название</th>
+                    <th>Создатель</th>
+                    <th>Сервер</th>
+                    <th>Режим</th>
+                    <th>Игроки</th>
+                    <th>Статус</th>
+                    <th>Дата создания</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lobby in lobbies.items %}
+                    <tr>
+                        <td>#{{ lobby.id }}</td>
+                        <td>
+                            <a href="{{ url_for('main.lobby_room', lobby_id=lobby.id) }}" class="lobby-link">
+                                {{ lobby.name }}
+                            </a>
+                        </td>
+                        <td>{{ lobby.creator.username if lobby.creator else 'Unknown' }}</td>
+                        <td>{{ lobby.server }}</td>
+                        <td>{{ lobby.mode }}</td>
+                        <td>{{ lobby.current_players }}/{{ lobby.max_players }}</td>
+                        <td>
+                            <span class="status-badge status-{{ lobby.status }}">
+                                {{ lobby.status.upper() }}
+                            </span>
+                        </td>
+                        <td>{{ lobby.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                        <td>
+                            <button class="btn btn-small btn-danger" onclick="deleteLobby({{ lobby.id }}, '{{ lobby.name }}')">
+                                Удалить
+                            </button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Pagination -->
+        <div class="pagination">
+            {% if lobbies.has_prev %}
+                <a href="{{ url_for('admin.admin_lobbies', page=lobbies.prev_num, status=status_filter) }}" class="btn btn-secondary">← Назад</a>
+            {% endif %}
+            <span class="page-info">Страница {{ lobbies.page }} из {{ lobbies.pages }}</span>
+            {% if lobbies.has_next %}
+                <a href="{{ url_for('admin.admin_lobbies', page=lobbies.next_num, status=status_filter) }}" class="btn btn-secondary">Вперед →</a>
+            {% endif %}
+        </div>
+    {% else %}
+        <p class="no-lobbies">Нет лобби для отображения</p>
+    {% endif %}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Подтверждение удаления</h2>
+            <span class="modal-close" onclick="closeDeleteModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>Вы уверены, что хотите удалить лобби <strong id="lobbyNameToDelete"></strong>?</p>
+            <p class="warning-text">Это действие нельзя отменить. Все участники, сообщения и связанные данные будут удалены.</p>
+        </div>
+        <div class="modal-footer">
+            <button id="confirmDeleteBtn" class="btn btn-danger">Удалить</button>
+            <button class="btn btn-secondary" onclick="closeDeleteModal()">Отмена</button>
+        </div>
+    </div>
+</div>
+
+<!-- Notification -->
+<div id="notification" class="notification" style="display: none;">
+    <span id="notificationText"></span>
+</div>
+
+<style>
+.lobbies-filters {
+    margin: 20px 0;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.lobbies-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    background: var(--card-bg);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.lobbies-table thead {
+    background: var(--bg-secondary);
+}
+
+.lobbies-table th {
+    padding: 15px;
+    text-align: left;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.lobbies-table td {
+    padding: 15px;
+    border-top: 1px solid var(--border-color);
+}
+
+.lobbies-table tbody tr:hover {
+    background: var(--hover-bg);
+}
+
+.lobby-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.lobby-link:hover {
+    text-decoration: underline;
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-weight: bold;
+}
+
+.status-open {
+    background: #4caf50;
+    color: white;
+}
+
+.status-full {
+    background: #ff9800;
+    color: white;
+}
+
+.status-started {
+    background: #2196F3;
+    color: white;
+}
+
+.status-finished {
+    background: #9e9e9e;
+    color: white;
+}
+
+.no-lobbies {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-secondary);
+    font-size: 1.1em;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin: 30px 0;
+}
+
+.page-info {
+    color: var(--text-secondary);
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 500px;
+    width: 90%;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-close {
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+.modal-close:hover {
+    color: var(--text-primary);
+}
+
+.modal-body {
+    margin-bottom: 20px;
+}
+
+.warning-text {
+    color: #f44336;
+    font-size: 0.9em;
+    margin-top: 10px;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    z-index: 2000;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    display: none;
+}
+
+.notification-success {
+    background: #4caf50;
+    color: white;
+}
+
+.notification-error {
+    background: #f44336;
+    color: white;
+}
+</style>
+
+<script>
+let lobbyToDelete = null;
+
+function deleteLobby(lobbyId, lobbyName) {
+    lobbyToDelete = lobbyId;
+    document.getElementById('lobbyNameToDelete').textContent = lobbyName;
+    document.getElementById('deleteModal').style.display = 'flex';
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').style.display = 'none';
+    lobbyToDelete = null;
+}
+
+document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+    if (!lobbyToDelete) return;
+    
+    fetch(`/admin/lobbies/${lobbyToDelete}/delete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            closeDeleteModal();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification(data.error || 'Ошибка при удалении', 'error');
+        }
+    })
+    .catch(err => {
+        showNotification('Ошибка сети: ' + err.message, 'error');
+    });
+});
+
+function showNotification(message, type = 'success') {
+    const notification = document.getElementById('notification');
+    const notificationText = document.getElementById('notificationText');
+    notificationText.textContent = message;
+    notification.className = `notification notification-${type}`;
+    notification.style.display = 'block';
+    setTimeout(() => {
+        notification.style.display = 'none';
+    }, 3000);
+}
+
+// Close modal on outside click
+window.onclick = function(event) {
+    const modal = document.getElementById('deleteModal');
+    if (event.target == modal) {
+        closeDeleteModal();
+    }
+}
+</script>
+{% endblock %}
+

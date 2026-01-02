@@ -1,0 +1,480 @@
+{% extends "base.html" %}
+
+{% block title %}Матчмейкинг - Ladder.gg{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="matchmaking-header">
+        <h1>🔍 Поиск матча</h1>
+        <p class="subtitle">Выберите режим и сервер, чтобы найти соперника</p>
+    </div>
+    
+    <div class="matchmaking-container">
+        <form id="searchForm" class="matchmaking-form">
+            <div class="form-group">
+                <label for="mode">Выберите режим</label>
+                <select id="mode" name="mode" required>
+                    <option value="">-- Выберите режим --</option>
+                    {% for mode in modes %}
+                        <option value="{{ mode }}">{{ mode }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="server">Выберите сервер</label>
+                <select id="server" name="server" required>
+                    <option value="">-- Выберите сервер --</option>
+                    {% for server in user_servers %}
+                        <option value="{{ server.server_name }}">{{ server.server_name }} ({{ server.server_nickname }})</option>
+                    {% endfor %}
+                </select>
+                {% if not user_servers %}
+                <small style="color: #c0272d; display: block; margin-top: 5px;">
+                    ⚠️ Добавьте серверы в <a href="{{ url_for('main.edit_profile') }}" style="color: #c0272d;">профиль</a>
+                </small>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-large" {% if not user_servers %}disabled{% endif %}>
+                🚀 Начать поиск
+            </button>
+        </form>
+
+        <!-- Статус поиска -->
+        <div id="searchStatus" class="search-status" style="display: none;">
+            <div class="spinner"></div>
+            <div class="search-text">
+                <h3>⏳ Поиск соперника...</h3>
+                <p id="searchDuration">Ищем уже 0 секунд</p>
+            </div>
+            <button type="button" class="btn btn-danger" onclick="cancelSearch()">✕ Отменить поиск</button>
+        </div>
+
+        <!-- Соперник найден -->
+        <div id="matchFound" class="match-found" style="display: none;">
+            <div class="match-header">
+                <h2>🎉 Соперник найден!</h2>
+            </div>
+            
+            <div class="match-info">
+                <div class="match-detail">
+                    <div class="your-side">
+                        <h4>Вы</h4>
+                        <div class="player-card">
+                            <div class="player-name">{{ current_user.username }}</div>
+                            <div class="player-stat">
+                                <span class="stat-label">GGP:</span>
+                                <span class="stat-value">{{ current_user.ggp }}</span>
+                            </div>
+                            <div class="player-stat">
+                                <span class="stat-label">Уровень:</span>
+                                <span class="stat-value level-{{ current_user.level }}">{{ current_user.level }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="vs-text">VS</div>
+
+                    <div class="opponent-side">
+                        <h4>Соперник</h4>
+                        <div id="opponentInfo" class="player-card">
+                            <!-- Заполняется JavaScript'ом -->
+                        </div>
+                    </div>
+                </div>
+
+                <div id="matchStats" class="match-stats">
+                    <!-- Заполняется JavaScript'ом -->
+                </div>
+            </div>
+
+            <div class="match-actions">
+                <button type="button" class="btn btn-primary btn-large" onclick="acceptMatch()">✓ Принять матч</button>
+                <button type="button" class="btn btn-secondary btn-large" onclick="declineMatch()">✕ Отклонить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.matchmaking-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.matchmaking-header h1 {
+    margin: 0 0 10px 0;
+    color: var(--primary-color);
+    font-size: 32px;
+}
+
+.subtitle {
+    margin: 0;
+    color: var(--gray-300);
+    font-size: 14px;
+}
+
+.matchmaking-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.matchmaking-form {
+    background: var(--secondary-color);
+    padding: 30px;
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(192, 39, 45, 0.1);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--gray-300);
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.2s;
+    box-sizing: border-box;
+}
+
+.form-group select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 6px rgba(192, 39, 45, 0.3);
+}
+
+.btn-large {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 10px;
+}
+
+.btn-large:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Статус поиска */
+.search-status {
+    display: none;
+    background: linear-gradient(135deg, var(--secondary-color) 0%, rgba(42, 42, 42, 0.8) 100%);
+    border: 2px solid var(--primary-color);
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    margin: 0 auto 20px;
+    border: 4px solid var(--border-color);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.search-text h3 {
+    margin: 0 0 10px 0;
+    color: var(--text-color);
+}
+
+.search-text p {
+    margin: 0;
+    color: var(--gray-300);
+    font-size: 14px;
+}
+
+.search-status .btn-danger {
+    margin-top: 20px;
+}
+
+/* Найден матч */
+.match-found {
+    background: var(--secondary-color);
+    border: 2px solid var(--primary-color);
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: 0 4px 12px rgba(192, 39, 45, 0.2);
+}
+
+.match-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.match-header h2 {
+    margin: 0;
+    color: var(--primary-color);
+    font-size: 28px;
+}
+
+.match-info {
+    margin-bottom: 30px;
+}
+
+.match-detail {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.your-side,
+.opponent-side {
+    text-align: center;
+}
+
+.your-side h4,
+.opponent-side h4 {
+    margin: 0 0 15px 0;
+    color: var(--text-color);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.player-card {
+    background: var(--border-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 15px;
+    text-align: center;
+}
+
+.player-name {
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+.player-stat {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.player-stat:last-child {
+    margin-bottom: 0;
+}
+
+.stat-label {
+    color: var(--gray-300);
+}
+
+.stat-value {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.level-1 { color: #808080; }
+.level-2 { color: #808080; }
+.level-3 { color: #00BFFF; }
+.level-4 { color: #00BFFF; }
+.level-5 { color: #00BFFF; }
+.level-6 { color: #0000FF; }
+.level-7 { color: #0000FF; }
+.level-8 { color: #0000FF; }
+.level-9 { color: #4B0082; }
+.level-10 { color: #4B0082; }
+
+.vs-text {
+    font-weight: bold;
+    color: var(--gray-700);
+    font-size: 24px;
+}
+
+.match-stats {
+    background: var(--border-color);
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+.stat-row:last-child {
+    border-bottom: none;
+}
+
+.stat-title {
+    color: var(--gray-300);
+    font-weight: 500;
+}
+
+.stat-value-compare {
+    text-align: right;
+    color: var(--primary-color);
+}
+
+.match-actions {
+    display: flex;
+    gap: 15px;
+}
+
+.match-actions .btn {
+    flex: 1;
+}
+
+@media (max-width: 768px) {
+    .matchmaking-form {
+        padding: 20px;
+    }
+
+    .match-detail {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .vs-text {
+        display: none;
+    }
+
+    .match-actions {
+        flex-direction: column;
+    }
+}
+</style>
+
+<script>
+let searchTimeout;
+
+document.getElementById('searchForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const mode = document.getElementById('mode').value;
+    const server = document.getElementById('server').value;
+    
+    if (!mode || !server) {
+        alert('Выберите режим и сервер');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/match/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ mode, server })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.opponents_count > 0) {
+            document.getElementById('searchForm').style.display = 'none';
+            document.getElementById('searchStatus').style.display = 'block';
+            
+            let seconds = 0;
+            const timer = setInterval(() => {
+                seconds++;
+                document.getElementById('searchDuration').textContent = `Ищем уже ${seconds} секунд`;
+            }, 1000);
+
+            // Имитация нахождения соперника через 3-8 секунд
+            const delay = 3000 + Math.random() * 5000;
+            searchTimeout = setTimeout(() => {
+                clearInterval(timer);
+                showMatchFound(data);
+            }, delay);
+        } else {
+            alert('❌ ' + (data.error || 'Соперников не найдено. Попробуйте позже'));
+        }
+    } catch (error) {
+        alert('❌ Ошибка сети: ' + error.message);
+    }
+});
+
+function showMatchFound(data) {
+    document.getElementById('searchStatus').style.display = 'none';
+    document.getElementById('matchFound').style.display = 'block';
+
+    // Генерируем виртуального соперника
+    const opponents = ['pro_player', 'casual_gamer', 'hardcore_gamer', 'newbie_91'];
+    const opponent = opponents[Math.floor(Math.random() * opponents.length)];
+    const opponentGGP = Math.floor({{ current_user.ggp }} + (Math.random() - 0.5) * 500);
+    const opponentLevel = Math.floor(opponentGGP / 1000) + 1;
+
+    document.getElementById('opponentInfo').innerHTML = `
+        <div class="player-name">${opponent}</div>
+        <div class="player-stat">
+            <span class="stat-label">GGP:</span>
+            <span class="stat-value">${opponentGGP}</span>
+        </div>
+        <div class="player-stat">
+            <span class="stat-label">Уровень:</span>
+            <span class="stat-value level-${opponentLevel}">${opponentLevel}</span>
+        </div>
+    `;
+
+    document.getElementById('matchStats').innerHTML = `
+        <div class="stat-row">
+            <span class="stat-title">Режим</span>
+            <span class="stat-value-compare">${data.mode}</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-title">Сервер</span>
+            <span class="stat-value-compare">${data.server}</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-title">Разница в GGP</span>
+            <span class="stat-value-compare">${Math.abs({{ current_user.ggp }} - opponentGGP)}</span>
+        </div>
+    `;
+}
+
+function cancelSearch() {
+    clearTimeout(searchTimeout);
+    location.reload();
+}
+
+function acceptMatch() {
+    alert('✓ Матч начат! Перейдите на сервер и начните игру');
+    location.reload();
+}
+
+function declineMatch() {
+    document.getElementById('matchFound').style.display = 'none';
+    document.getElementById('searchForm').style.display = 'block';
+    alert('Поиск возобновлен');
+}
+
+// Закрывать модал при ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        cancelSearch();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Админ панель - Ladder.gg{% endblock %}
+
+{% block content %}
+<div class="container admin-dashboard">
+    <h1>Панель администратора</h1>
+    <p class="admin-info">Уровень доступа: <strong>{{ current_user.get_admin_level_name() }}</strong></p>
+
+    <section class="admin-stats">
+        <h2>Статистика</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.total_users }}</div>
+                <div class="stat-label">Всего игроков</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.total_matches }}</div>
+                <div class="stat-label">Всего матчей</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.active_bans }}</div>
+                <div class="stat-label">Активных банов</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.open_tickets }}</div>
+                <div class="stat-label">Открытых тикетов</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.total_lobbies }}</div>
+                <div class="stat-label">Всего лобби</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.active_lobbies }}</div>
+                <div class="stat-label">Активных лобби</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="admin-actions">
+        <h2>Быстрый доступ</h2>
+        <div class="action-buttons">
+            {% if current_user.admin_level >= 3 %}
+                <a href="{{ url_for('admin.users') }}" class="btn btn-secondary">Управление пользователями</a>
+            {% endif %}
+            {% if current_user.admin_level >= 1 %}
+                <a href="{{ url_for('admin.support_tickets') }}" class="btn btn-secondary">Тикеты поддержки</a>
+                <a href="{{ url_for('admin.lobby_screenshots') }}" class="btn btn-secondary">📸 Скриншоты лобби</a>
+                <a href="{{ url_for('admin.admin_lobbies') }}" class="btn btn-secondary">🎮 Управление лобби</a>
+            {% endif %}
+        </div>
+    </section>
+
+    {% if recent_actions %}
+    <section class="recent-actions">
+        <h2>Последние действия</h2>
+        <table class="actions-table">
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Администратор</th>
+                    <th>Действие</th>
+                    <th>Пользователь</th>
+                    <th>Причина</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for action in recent_actions %}
+                    <tr>
+                        <td>{{ action.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                        <td>{{ action.admin.username }}</td>
+                        <td><span class="action-badge">{{ action.action }}</span></td>
+                        <td>{{ action.target_user_id }}</td>
+                        <td>{{ action.reason or '-' }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

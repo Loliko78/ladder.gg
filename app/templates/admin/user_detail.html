@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.username }} - Ladder.gg{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="user-detail-header">
+        <h1>{{ user.username }}</h1>
+        <span class="level-badge" style="color: {{ user.get_level_color() }}">Уровень {{ user.level }}</span>
+        {% if user.admin_level > 0 %}
+            <span class="admin-badge admin-{{ user.get_admin_level_name() }}">{{ user.get_admin_level_name() }}</span>
+        {% endif %}
+    </div>
+
+    <div class="user-detail-content">
+        <section class="user-info">
+            <h2>Информация</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="label">Email:</span>
+                    <span class="value">{{ user.email }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">GGP:</span>
+                    <span class="value">{{ user.ggp }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Статус:</span>
+                    <span class="value">{% if user.is_banned %}ЗАБАНЕН{% else %}АКТИВЕН{% endif %}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Дата создания:</span>
+                    <span class="value">{{ user.created_at.strftime('%d.%m.%Y') }}</span>
+                </div>
+            </div>
+        </section>
+
+        {% if servers %}
+        <section class="user-servers">
+            <h2>Серверы</h2>
+            <div class="servers-list">
+                {% for server in servers %}
+                    <div class="server-item">
+                        <p><strong>{{ server.server_name }}:</strong> {{ server.server_nickname }}</p>
+                        <p>Побед: {{ server.wins }} | Поражений: {{ server.losses }} | WR: {{ server.get_winrate() }}%</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if current_user.admin_level >= 2 %}
+        <section class="admin-actions">
+            <h2>Админ действия</h2>
+            
+            {% if not user.is_banned %}
+                <form method="POST" action="{{ url_for('admin.ban_user', user_id=user.id) }}" class="ban-form">
+                    <div class="form-group">
+                        <label for="reason">Причина бана</label>
+                        <textarea id="reason" name="reason" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="ban_type">Тип бана</label>
+                        <select id="ban_type" name="ban_type" {% if current_user.admin_level < 3 %}disabled{% endif %}>
+                            <option value="temporary">Временный</option>
+                            {% if current_user.admin_level >= 3 %}<option value="permanent">Постоянный</option>{% endif %}
+                        </select>
+                    </div>
+                    <div class="form-group" id="duration_group">
+                        <label for="duration_hours">Длительность (часов)</label>
+                        <input type="number" id="duration_hours" name="duration_hours" value="24" min="1" max="8760">
+                    </div>
+                    <button type="submit" class="btn btn-danger">Забанить</button>
+                </form>
+            {% else %}
+                <p class="user-is-banned">Пользователь забанен до {{ user.ban_expires.strftime('%d.%m.%Y %H:%M') if user.ban_expires else 'навсегда' }}</p>
+                <form method="POST" action="{{ url_for('admin.unban_user', user_id=user.id) }}">
+                    <button type="submit" class="btn btn-success">Разбанить</button>
+                </form>
+            {% endif %}
+
+            {% if current_user.admin_level >= 6 %}
+            <form method="POST" action="{{ url_for('admin.assign_role', user_id=user.id) }}" class="role-form">
+                <div class="form-group">
+                    <label for="admin_level">Роль</label>
+                    <select id="admin_level" name="admin_level" required>
+                        <option value="0" {% if user.admin_level == 0 %}selected{% endif %}>USER</option>
+                        <option value="1" {% if user.admin_level == 1 %}selected{% endif %}>HELPER</option>
+                        <option value="2" {% if user.admin_level == 2 %}selected{% endif %}>JUNIOR</option>
+                        <option value="3" {% if user.admin_level == 3 %}selected{% endif %}>ADMIN</option>
+                        <option value="4" {% if user.admin_level == 4 %}selected{% endif %}>CHEATHUNTER</option>
+                        <option value="5" {% if user.admin_level == 5 %}selected{% endif %}>DEP</option>
+                        <option value="6" {% if user.admin_level == 6 %}selected{% endif %}>OWNER</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="reason">Причина</label>
+                    <textarea id="reason" name="reason"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Изменить роль</button>
+            </form>
+            {% endif %}
+        </section>
+        {% endif %}
+
+        {% if bans %}
+        <section class="ban-history">
+            <h2>История банов</h2>
+            <table class="bans-table">
+                <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Администратор</th>
+                        <th>Тип</th>
+                        <th>Истекает</th>
+                        <th>Причина</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ban in bans %}
+                        <tr>
+                            <td>{{ ban.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                            <td>{{ ban.admin.username }}</td>
+                            <td>{{ ban.ban_type }}</td>
+                            <td>{{ ban.expires_at.strftime('%d.%m.%Y %H:%M') if ban.expires_at else 'Навсегда' }}</td>
+                            <td>{{ ban.reason }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+        {% endif %}
+
+        {% if actions %}
+        <section class="actions-history">
+            <h2>История действий администраторов</h2>
+            <table class="actions-table">
+                <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Администратор</th>
+                        <th>Действие</th>
+                        <th>Причина</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for action in actions %}
+                        <tr>
+                            <td>{{ action.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                            <td>{{ action.admin.username }}</td>
+                            <td><span class="action-badge">{{ action.action }}</span></td>
+                            <td>{{ action.reason or '-' }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.getElementById('ban_type').addEventListener('change', function() {
+    const durationGroup = document.getElementById('duration_group');
+    durationGroup.style.display = this.value === 'temporary' ? 'block' : 'none';
+});
+</script>
+{% endblock %}

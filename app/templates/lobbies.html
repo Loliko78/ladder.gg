@@ -1,0 +1,695 @@
+{% extends "base.html" %}
+
+{% block title %}Лобби - Ladder.gg{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="lobbies-header">
+        <div>
+            <h1>🎮 Публичные лобби</h1>
+            <p class="subtitle">Присоединитесь к уже созданным лобби или создайте своё</p>
+        </div>
+        <button class="btn btn-primary btn-lg" onclick="openCreateLobbyModal()">+ Создать лобби</button>
+    </div>
+
+    <!-- Модальное окно для создания лобби -->
+    <div id="createLobbyModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Создать новое лобби</h2>
+                <button class="modal-close" onclick="closeCreateLobbyModal()">×</button>
+            </div>
+            <form id="createLobbyForm" class="lobby-form">
+                <div class="form-group">
+                    <label for="lobbyName">Название лобби</label>
+                    <input type="text" id="lobbyName" name="name" placeholder="Например: Классный лобби" required minlength="3" maxlength="50">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="lobbyMode">Режим</label>
+                        <select id="lobbyMode" name="mode" required>
+                            <option value="">-- Выберите --</option>
+                            <option value="1x1">1x1 (1 vs 1)</option>
+                            <option value="2x2">2x2 (2 vs 2)</option>
+                            <option value="3x3">3x3 (3 vs 3)</option>
+                            <option value="5x5">5x5 (5 vs 5)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="lobbyServer">Сервер</label>
+                        <select id="lobbyServer" name="server" required>
+                            <option value="">-- Выберите --</option>
+                            {% for server in all_servers %}
+                            <option value="{{ server }}">{{ server }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="maxPlayers">Максимум игроков</label>
+                        <select id="maxPlayers" name="max_players" required>
+                            <option value="2">2 игрока</option>
+                            <option value="4">4 игрока</option>
+                            <option value="6">6 игроков</option>
+                            <option value="8">8 игроков</option>
+                            <option value="10">10 игроков</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="isPublic">Видимость</label>
+                        <select id="isPublic" name="is_public">
+                            <option value="true">Публичное</option>
+                            <option value="false">Приватное</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Пароль (если приватное)</label>
+                    <input type="text" id="password" name="password" placeholder="Оставьте пусто если не нужен" maxlength="20">
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Описание лобби</label>
+                    <textarea id="description" name="description" placeholder="Расскажите о лобби..." maxlength="500" rows="4"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Создать лобби</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateLobbyModal()">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Список лобби -->
+    {% if lobbies.items %}
+        <div class="lobbies-grid">
+            {% for lobby in lobbies.items %}
+                <div class="lobby-card">
+                    <div class="lobby-header">
+                        <h3>{{ lobby.name }}</h3>
+                        <span class="lobby-status status-{{ lobby.status }}">{{ lobby.status.upper() }}</span>
+                    </div>
+
+                    <div class="lobby-info">
+                        <div class="info-row">
+                            <span class="label">🎮 Режим:</span>
+                            <span class="value">{{ lobby.mode }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">🖥️ Сервер:</span>
+                            <span class="value">{{ lobby.server }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">👥 Игроки:</span>
+                            <span class="value progress-bar">
+                                <span class="progress-fill" style="width: {{ (lobby.current_players / lobby.max_players * 100)|int }}%"></span>
+                                <span class="progress-text">{{ lobby.current_players }}/{{ lobby.max_players }}</span>
+                            </span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">👤 Создатель:</span>
+                            <span class="value">{{ lobby.creator.username }}</span>
+                        </div>
+                    </div>
+
+                    {% if lobby.status == 'open' or lobby.status == 'full' %}
+                    <button class="btn btn-secondary" onclick="joinLobby({{ lobby.id }}, {% if lobby.password %}'{{ lobby.password }}'{% else %}null{% endif %})">
+                        {% if lobby.status == 'full' %}Лобби полное{% else %}Присоединиться{% endif %}
+                    </button>
+                    {% else %}
+                    <button class="btn btn-disabled" disabled>Матч начался</button>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <p class="empty-message">😢 Нет открытых лобби</p>
+            <p class="empty-subtitle">Создайте своё лобби и ждите игроков!</p>
+        </div>
+    {% endif %}
+
+    <!-- Пагинация -->
+    {% if lobbies.pages > 1 %}
+    <div class="pagination">
+        {% if lobbies.has_prev %}
+            <a href="{{ url_for('main.lobbies', page=lobbies.prev_num) }}" class="page-link">← Предыдущая</a>
+        {% endif %}
+        <span class="page-info">Страница {{ lobbies.page }} из {{ lobbies.pages }}</span>
+        {% if lobbies.has_next %}
+            <a href="{{ url_for('main.lobbies', page=lobbies.next_num) }}" class="page-link">Следующая →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.lobbies-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 40px;
+}
+
+.lobbies-header h1 {
+    margin: 0 0 10px 0;
+    color: #e0e0e0;
+    font-size: 32px;
+}
+
+.subtitle {
+    margin: 0;
+    color: #888;
+    font-size: 14px;
+}
+
+.lobbies-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.lobby-card {
+    background: #2a2a2a;
+    border: 2px solid #3a3a3a;
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.lobby-card:hover {
+    border-color: #c0272d;
+    box-shadow: 0 4px 12px rgba(192, 39, 45, 0.3);
+    transform: translateY(-4px);
+}
+
+.lobby-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.lobby-header h3 {
+    margin: 0;
+    color: #e0e0e0;
+    font-size: 18px;
+}
+
+.lobby-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-open {
+    background-color: #1a3a1a;
+    color: #5ec85e;
+}
+
+.status-full {
+    background-color: #3a2a1a;
+    color: #ff9800;
+}
+
+.status-started {
+    background-color: #2a1a3a;
+    color: #bb86fc;
+}
+
+.lobby-info {
+    flex: 1;
+    margin-bottom: 15px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.info-row .label {
+    color: #aaa;
+    font-weight: 500;
+}
+
+.info-row .value {
+    color: #e0e0e0;
+    font-weight: 600;
+}
+
+.progress-bar {
+    display: flex;
+    align-items: center;
+    background: #1a1a1a;
+    border-radius: 4px;
+    overflow: hidden;
+    height: 20px;
+    position: relative;
+    width: 100px;
+}
+
+.progress-fill {
+    background: linear-gradient(90deg, #c0272d, #e04545);
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    color: #e0e0e0;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.btn-lg {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.btn-secondary {
+    width: 100%;
+    padding: 10px;
+}
+
+.btn-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    width: 100%;
+    padding: 10px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.empty-message {
+    color: #666;
+    font-size: 24px;
+    margin: 0 0 10px 0;
+}
+
+.empty-subtitle {
+    color: #555;
+    font-size: 16px;
+    margin: 0;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: #2a2a2a;
+    border-radius: 8px;
+    padding: 0;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #3a3a3a;
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: #e0e0e0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #777;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover {
+    color: #e0e0e0;
+}
+
+.lobby-form {
+    padding: 20px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    color: #e0e0e0;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #3a3a3a;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+    background: #1a1a1a;
+    color: #e0e0e0;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #c0272d;
+    box-shadow: 0 0 4px rgba(192, 39, 45, 0.3);
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #3a3a3a;
+}
+
+.form-actions .btn {
+    flex: 1;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.page-link {
+    padding: 8px 12px;
+    border: 1px solid #3a3a3a;
+    border-radius: 4px;
+    text-decoration: none;
+    color: #e0e0e0;
+    transition: all 0.2s;
+}
+
+.page-link:hover {
+    background-color: #3a3a3a;
+}
+
+.page-info {
+    color: #777;
+    font-size: 14px;
+}
+
+@media (max-width: 768px) {
+    .lobbies-header {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .lobbies-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+function openCreateLobbyModal() {
+    document.getElementById('createLobbyModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeCreateLobbyModal() {
+    document.getElementById('createLobbyModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+document.getElementById('createLobbyForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('lobbyName').value;
+    const mode = document.getElementById('lobbyMode').value;
+    const server = document.getElementById('lobbyServer').value;
+    const max_players = parseInt(document.getElementById('maxPlayers').value);
+    const is_public = document.getElementById('isPublic').value === 'true';
+    const password = document.getElementById('password').value || '';
+
+    try {
+        const response = await fetch('/api/lobby/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name,
+                mode,
+                server,
+                max_players,
+                is_public,
+                password
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showNotification('✓ Лобби создано!', 'success');
+            closeCreateLobbyModal();
+            setTimeout(() => {
+                window.location.href = data.redirect_url;
+            }, 500);
+        } else {
+            showNotification('❌ Ошибка: ' + (data.error || 'Не удалось создать лобби'), 'error');
+        }
+    } catch (error) {
+        showNotification('❌ Ошибка сети: ' + error.message, 'error');
+    }
+});
+
+function joinLobby(lobbyId, password) {
+    if (password) {
+        showPasswordModal(lobbyId);
+        return;
+    }
+    
+    performJoin(lobbyId, null);
+}
+
+function showPasswordModal(lobbyId) {
+    document.getElementById('passwordLobbyId').value = lobbyId;
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('passwordModal').style.display = 'flex';
+}
+
+function performJoin(lobbyId, password) {
+    fetch(`/api/lobby/${lobbyId}/join`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ password: password })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('✓ Вы присоединились!', 'success');
+            setTimeout(() => {
+                if (data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    window.location.reload();
+                }
+            }, 1000);
+        } else {
+            showNotification('❌ Ошибка: ' + (data.error || 'Не удалось присоединиться'), 'error');
+        }
+    })
+    .catch(err => showNotification('❌ Ошибка сети: ' + err.message, 'error'));
+}
+
+function confirmPasswordJoin() {
+    const lobbyId = document.getElementById('passwordLobbyId').value;
+    const password = document.getElementById('passwordInput').value;
+    document.getElementById('passwordModal').style.display = 'none';
+    performJoin(lobbyId, password);
+}
+
+function showNotification(message, type = 'success') {
+    // Create notification element if it doesn't exist
+    let notification = document.getElementById('globalNotification');
+    if (!notification) {
+        notification = document.createElement('div');
+        notification.id = 'globalNotification';
+        notification.className = 'notification';
+        document.body.appendChild(notification);
+    }
+    
+    notification.textContent = message;
+    notification.className = `notification notification-${type}`;
+    notification.style.display = 'block';
+    setTimeout(() => {
+        notification.style.display = 'none';
+    }, 3000);
+}
+
+// Закрывать модал при клике вне его
+document.getElementById('createLobbyModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeCreateLobbyModal();
+    }
+});
+
+document.getElementById('passwordModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        this.style.display = 'none';
+    }
+});
+</script>
+
+<!-- Password Modal -->
+<div id="passwordModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Пароль от лобби</h2>
+            <span class="modal-close" onclick="document.getElementById('passwordModal').style.display='none'">&times;</span>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="passwordLobbyId">
+            <label for="passwordInput">Введите пароль:</label>
+            <input type="password" id="passwordInput" class="form-control" placeholder="Пароль" onkeypress="if(event.key==='Enter') confirmPasswordJoin()">
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" onclick="confirmPasswordJoin()">Войти</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('passwordModal').style.display='none'">Отмена</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 500px;
+    width: 90%;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-close {
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+.modal-close:hover {
+    color: var(--text-primary);
+}
+
+.modal-body {
+    margin-bottom: 20px;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    z-index: 2000;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    display: none;
+}
+
+.notification-success {
+    background: #4caf50;
+    color: white;
+}
+
+.notification-error {
+    background: #f44336;
+    color: white;
+}
+
+.notification-info {
+    background: #2196F3;
+    color: white;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Главная - Ladder.gg{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div class="hero-content">
+        <h1>LADDER.GG</h1>
+        <p>Платформа для регистрации и организации матчей 1x1, 2x2, 3x3, 5x5</p>
+        <p class="subtitle">на арене Majestic RP</p>
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('main.matchmaking') }}" class="btn btn-primary btn-large">Начать поиск</a>
+        {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-large">Войти</a>
+        {% endif %}
+    </div>
+</div>
+
+{% if current_user.is_authenticated %}
+<div class="container">
+    <section class="stats-section">
+        <h2>Статистика платформы</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.total_users }}</div>
+                <div class="stat-label">Игроков</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.total_matches }}</div>
+                <div class="stat-label">Матчей сыграно</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.online_users }}</div>
+                <div class="stat-label">Онлайн сейчас</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="quick-actions">
+        <h2>Быстрые действия</h2>
+        <div class="action-buttons">
+            <a href="{{ url_for('main.matchmaking') }}" class="btn btn-secondary">Поиск матча</a>
+            <a href="{{ url_for('main.lobbies') }}" class="btn btn-secondary">Публичные лобби</a>
+            <a href="{{ url_for('main.leaderboard') }}" class="btn btn-secondary">Рейтинг</a>
+            <a href="{{ url_for('main.profile') }}" class="btn btn-secondary">Мой профиль</a>
+        </div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

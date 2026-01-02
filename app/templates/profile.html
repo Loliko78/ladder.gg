@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Профиль - Ladder.gg{% endblock %}
+
+{% block content %}
+<div class="container profile-container">
+    <div class="profile-header">
+        <div class="profile-info">
+            <h1 class="username">{{ user.username }}</h1>
+            {% if user.admin_level > 0 %}
+                <span class="admin-badge admin-{{ user.get_admin_level_name() }}">{{ user.get_admin_level_name() }}</span>
+            {% endif %}
+            <a href="{{ url_for('main.edit_profile') }}" class="btn btn-secondary">Редактировать</a>
+        </div>
+    </div>
+
+    <div class="profile-content">
+        {% if current_lobby %}
+        <section class="profile-current-lobby">
+            <h2>🎮 Текущее лобби</h2>
+            <div class="current-lobby-card">
+                <div class="lobby-info">
+                    <h3>{{ current_lobby.name }}</h3>
+                    <div class="lobby-details">
+                        <span class="detail">📍 {{ current_lobby.server }}</span>
+                        <span class="detail">⚔️ {{ current_lobby.mode }}</span>
+                        <span class="detail">👥 {{ current_lobby.current_players }}/{{ current_lobby.max_players }}</span>
+                        <span class="detail status-{{ current_lobby.status }}">{{ current_lobby.status.upper() }}</span>
+                    </div>
+                    {% if current_lobby.description %}
+                        <p class="lobby-description">{{ current_lobby.description[:100] }}{% if current_lobby.description|length > 100 %}...{% endif %}</p>
+                    {% endif %}
+                </div>
+                <div class="lobby-actions">
+                    <a href="{{ url_for('main.lobby_room', lobby_id=current_lobby.id) }}" class="btn btn-primary">
+                        Перейти в лобби →
+                    </a>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+        
+        <section class="profile-stats">
+            <h2>Статистика</h2>
+            <div class="stats-display">
+                <div class="stat">
+                    <div class="stat-label">GGP</div>
+                    <div class="stat-value">{{ user.ggp }}</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Уровень</div>
+                    <div class="stat-value" style="color: {{ user.get_level_color() }}">{{ user.level }}</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Email</div>
+                    <div class="stat-value">{{ user.email }}</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Дата создания</div>
+                    <div class="stat-value">{{ user.created_at.strftime('%d.%m.%Y') }}</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="profile-servers">
+            <h2>Серверы ({{ user_servers|length }})</h2>
+            {% if user_servers %}
+                <div class="servers-list">
+                    {% for server in user_servers %}
+                        <div class="server-card">
+                            <h3>{{ server.server_name }}</h3>
+                            <p><strong>Никнейм:</strong> {{ server.server_nickname }}</p>
+                            <div class="server-stats">
+                                <div class="stat">
+                                    <span class="label">Победы:</span>
+                                    <span class="value">{{ server.wins }}</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="label">Поражения:</span>
+                                    <span class="value">{{ server.losses }}</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="label">WR:</span>
+                                    <span class="value">{{ server.get_winrate() }}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-message">Вы еще не выбрали серверы</p>
+            {% endif %}
+        </section>
+
+        <section class="profile-friends">
+            <h2>Друзья ({{ friends|length }})</h2>
+            {% if friends %}
+                <div class="friends-list">
+                    {% for friend in friends %}
+                        <div class="friend-card">
+                            <div class="friend-info">
+                                <p class="friend-name">{{ friend.username }}</p>
+                                <p class="friend-ggp">GGP: {{ friend.ggp }} | Уровень: {{ friend.level }}</p>
+                            </div>
+                            <button class="btn btn-small btn-danger" onclick="removeFriend({{ friend.id }})">Удалить</button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-message">У вас еще нет друзей</p>
+            {% endif %}
+        </section>
+    </div>
+</div>
+
+<style>
+.profile-current-lobby {
+    margin-bottom: 30px;
+}
+
+.current-lobby-card {
+    background: var(--card-bg);
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.current-lobby-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.lobby-info {
+    flex: 1;
+}
+
+.lobby-info h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.3em;
+    color: var(--text-primary);
+}
+
+.lobby-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.lobby-details .detail {
+    padding: 4px 10px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+.lobby-details .detail.status-open {
+    background: #4caf50;
+    color: white;
+}
+
+.lobby-details .detail.status-full {
+    background: #ff9800;
+    color: white;
+}
+
+.lobby-details .detail.status-started {
+    background: #2196F3;
+    color: white;
+}
+
+.lobby-description {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    margin-top: 10px;
+    margin-bottom: 0;
+}
+
+.lobby-actions {
+    display: flex;
+    align-items: center;
+}
+
+@media (max-width: 768px) {
+    .current-lobby-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .lobby-actions {
+        justify-content: stretch;
+    }
+    
+    .lobby-actions .btn {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+function removeFriend(friendId) {
+    if (confirm('Удалить друга?')) {
+        fetch('/api/friends/remove', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({friend_id: friendId})
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

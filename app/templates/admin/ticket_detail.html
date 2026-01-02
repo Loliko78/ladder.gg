@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}Тикет #{{ ticket.id }} - Ladder.gg{% endblock %}
+
+{% block content %}
+<div class="container ticket-detail">
+    <div class="ticket-header">
+        <h1>Тикет #{{ ticket.id }}: {{ ticket.subject }}</h1>
+        <span class="status-badge status-{{ ticket.status }}">{{ ticket.status }}</span>
+        <span class="priority-badge priority-{{ ticket.priority }}">{{ ticket.priority }}</span>
+    </div>
+
+    <section class="ticket-info">
+        <h2>Информация</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="label">От пользователя:</span>
+                <span class="value">{{ ticket.creator.username }}</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Дата создания:</span>
+                <span class="value">{{ ticket.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Назначено:</span>
+                <span class="value">{{ ticket.assigned_admin.username if ticket.assigned_admin else 'Не назначено' }}</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="ticket-description">
+        <h2>Описание</h2>
+        <p>{{ ticket.description }}</p>
+    </section>
+
+    <section class="ticket-messages">
+        <h2>Сообщения</h2>
+        <div class="messages-list">
+            {% for message in messages %}
+                <div class="message">
+                    <div class="message-header">
+                        <strong>{{ message.user.username }}</strong>
+                        {% if message.user.admin_level >= 1 %}
+                            <span class="badge badge-admin">Администратор</span>
+                        {% endif %}
+                        <span class="message-date">{{ message.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                    </div>
+                    <div class="message-body">
+                        {{ message.message }}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    {% if ticket.status != 'closed' %}
+    <section class="ticket-message-form">
+        <h2>Добавить сообщение</h2>
+        <form method="POST" action="{{ url_for('admin.admin_add_ticket_message', ticket_id=ticket.id) }}">
+            <div class="form-group">
+                <textarea name="message" class="form-control" rows="4" placeholder="Ваше сообщение..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Отправить сообщение</button>
+        </form>
+    </section>
+    {% endif %}
+
+    <section class="ticket-actions">
+        <h2>Действия</h2>
+        <form method="POST" action="{{ url_for('admin.update_ticket_status', ticket_id=ticket.id) }}" class="action-form">
+            <div class="form-group">
+                <label for="status">Изменить статус</label>
+                <select id="status" name="status">
+                    <option value="open" {% if ticket.status == 'open' %}selected{% endif %}>Открыт</option>
+                    <option value="in_progress" {% if ticket.status == 'in_progress' %}selected{% endif %}>В процессе</option>
+                    <option value="resolved" {% if ticket.status == 'resolved' %}selected{% endif %}>Решен</option>
+                    <option value="closed" {% if ticket.status == 'closed' %}selected{% endif %}>Закрыт</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Обновить</button>
+        </form>
+    </section>
+</div>
+
+<style>
+.container {
+    background: #1a1a1a;
+    padding: 40px 20px;
+    max-width: 1000px;
+    margin: 20px auto;
+}
+
+.ticket-detail {
+    background: #2a2a2a;
+    border-radius: 8px;
+    padding: 30px;
+}
+
+.ticket-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #404040;
+}
+
+.ticket-header h1 {
+    margin: 0;
+    color: #e0e0e0;
+    font-size: 28px;
+}
+
+.status-badge, .priority-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.status-open { background: #1a5a5a; color: #66d9cf; }
+.status-in_progress { background: #5a3a1a; color: #ffb366; }
+.status-resolved { background: #1a5a2a; color: #66ff99; }
+.status-closed { background: #3a1a5a; color: #cc99ff; }
+
+.priority-low { background: #1a5a4a; color: #66d9cf; }
+.priority-normal { background: #3a1a5a; color: #cc99ff; }
+.priority-high { background: #5a1a1a; color: #ff6666; }
+.priority-urgent { background: #c0272d; color: white; }
+
+.ticket-info {
+    margin-bottom: 30px;
+}
+
+.ticket-info h2 {
+    color: #e0e0e0;
+    font-size: 18px;
+    margin-bottom: 15px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.info-item {
+    background: #1a1a1a;
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 4px solid #c0272d;
+}
+
+.info-item .label {
+    display: block;
+    color: #888;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.info-item .value {
+    color: #e0e0e0;
+    font-weight: 600;
+}
+
+.ticket-description, .ticket-messages, .ticket-actions, .ticket-message-form {
+    margin-bottom: 30px;
+}
+
+.ticket-description h2, .ticket-messages h2, .ticket-actions h2, .ticket-message-form h2 {
+    color: #e0e0e0;
+    font-size: 18px;
+    margin-bottom: 15px;
+}
+
+.ticket-description p {
+    background: #1a1a1a;
+    padding: 20px;
+    border-left: 4px solid #c0272d;
+    border-radius: 6px;
+    color: #d0d0d0;
+    line-height: 1.6;
+}
+
+.messages-list {
+    background: #1a1a1a;
+    border: 1px solid #404040;
+    border-radius: 6px;
+    padding: 15px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.message {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #404040;
+}
+
+.message:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.message-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.message-header strong {
+    color: #ff6b6b;
+}
+
+.badge-admin {
+    background: #c0272d;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.message-date {
+    color: #888;
+    font-size: 12px;
+    margin-left: auto;
+}
+
+.message-body {
+    color: #d0d0d0;
+    background: #2a2a2a;
+    padding: 12px;
+    border-radius: 4px;
+    line-height: 1.5;
+}
+
+.ticket-message-form {
+    background: #2a2a2a;
+    padding: 20px;
+    border: 1px solid #404040;
+    border-radius: 6px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    color: #e0e0e0;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.form-control, .form-group textarea {
+    width: 100%;
+    padding: 12px;
+    background: #1a1a1a;
+    color: #e0e0e0;
+    border: 1px solid #404040;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.form-control:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: #c0272d;
+    box-shadow: 0 0 4px rgba(192, 39, 45, 0.2);
+}
+
+.action-form {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.action-form .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.action-form select {
+    width: 100%;
+    padding: 10px;
+    background: #1a1a1a;
+    color: #e0e0e0;
+    border: 1px solid #404040;
+    border-radius: 4px;
+}
+
+.btn {
+    padding: 10px 20px;
+    background: #c0272d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn:hover {
+    background: #8f1d22;
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background: #c0272d;
+}
+
+@media (max-width: 768px) {
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-form {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,1152 @@
+/* ==================== VARIABLES ==================== */
+
+:root {
+    --primary-color: #c0272d;      /* crimson/maroon */
+    --secondary-color: #2a2a2a;    /* dark gray */
+    --background-color: #1a1a1a;   /* almost black */
+    --text-color: #ffffff;
+    --border-color: #404040;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+    --gray-300: #d3d3d3;
+    --gray-700: #808080;
+    --level-1-2: #808080;
+    --level-3-5: #00BFFF;
+    --level-6-8: #0000FF;
+    --level-9-10: #4B0082;
+}
+
+/* ==================== GLOBAL STYLES ==================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* ==================== NAVBAR ==================== */
+
+.navbar {
+    background-color: var(--secondary-color);
+    border-bottom: 2px solid var(--primary-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 60px;
+}
+
+.nav-brand {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.logo {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.logo-img {
+    height: 32px;
+    width: auto;
+    object-fit: contain;
+}
+
+.logo:hover {
+    color: var(--gray-300);
+}
+
+.nav-menu {
+    display: flex;
+    list-style: none;
+    gap: 30px;
+}
+
+.nav-link {
+    color: var(--text-color);
+    text-decoration: none;
+    transition: color 0.3s;
+    font-size: 14px;
+}
+
+.nav-link:hover {
+    color: var(--primary-color);
+}
+
+.nav-link.admin-link {
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+.nav-link.logout {
+    color: var(--danger-color);
+}
+
+/* ==================== ALERTS ==================== */
+
+.alerts {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 20px;
+}
+
+.alert {
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    position: relative;
+    padding-right: 40px;
+}
+
+.alert-success {
+    background-color: rgba(40, 167, 69, 0.1);
+    border: 1px solid var(--success-color);
+    color: var(--success-color);
+}
+
+.alert-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    border: 1px solid var(--danger-color);
+    color: var(--danger-color);
+}
+
+.alert-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    border: 1px solid var(--warning-color);
+    color: var(--warning-color);
+}
+
+.alert-info {
+    background-color: rgba(23, 162, 184, 0.1);
+    border: 1px solid var(--info-color);
+    color: var(--info-color);
+}
+
+.alert .close {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+/* ==================== MAIN CONTENT ==================== */
+
+.main-content {
+    padding: 40px 20px;
+}
+
+/* ==================== HERO SECTION ==================== */
+
+.hero {
+    text-align: center;
+    padding: 80px 20px;
+    background: linear-gradient(135deg, var(--secondary-color) 0%, #1f1f1f 100%);
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.hero-content h1 {
+    font-size: 48px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: var(--primary-color);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.hero-content p {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: var(--gray-300);
+}
+
+.hero-content .subtitle {
+    margin-bottom: 30px;
+    font-size: 16px;
+}
+
+/* ==================== BUTTONS ==================== */
+
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s;
+    text-align: center;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: var(--text-color);
+}
+
+.btn-primary:hover {
+    background-color: #a0202a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(192, 39, 45, 0.3);
+}
+
+.btn-secondary {
+    background-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.btn-secondary:hover {
+    background-color: var(--secondary-color);
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    color: var(--text-color);
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    transform: translateY(-2px);
+}
+
+.btn-success {
+    background-color: var(--success-color);
+    color: var(--text-color);
+}
+
+.btn-success:hover {
+    background-color: #218838;
+}
+
+.btn-large {
+    padding: 15px 40px;
+    font-size: 16px;
+    margin-top: 20px;
+}
+
+.btn-small {
+    padding: 8px 16px;
+    font-size: 12px;
+}
+
+/* ==================== FORMS ==================== */
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--gray-300);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(192, 39, 45, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+/* ==================== AUTH FORM ==================== */
+
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 200px);
+}
+
+.auth-form {
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 40px;
+    width: 100%;
+    max-width: 400px;
+}
+
+.auth-form h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: var(--primary-color);
+}
+
+.auth-link {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 14px;
+}
+
+.auth-link a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.auth-link a:hover {
+    text-decoration: underline;
+}
+
+/* ==================== STATS ==================== */
+
+.stats-section {
+    margin-top: 60px;
+}
+
+.stats-section h2,
+.stats-grid {
+    margin-bottom: 30px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.stat-card {
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s;
+}
+
+.stat-card:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-4px);
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: var(--gray-300);
+}
+
+/* ==================== QUICK ACTIONS ==================== */
+
+.quick-actions {
+    margin-top: 40px;
+    text-align: center;
+}
+
+.quick-actions h2 {
+    margin-bottom: 30px;
+}
+
+.action-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+/* ==================== PROFILE ==================== */
+
+.profile-container {
+    padding: 40px 0;
+}
+
+.profile-header {
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 30px;
+    margin-bottom: 30px;
+}
+
+.profile-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.profile-info h1 {
+    flex: 1;
+    margin: 0;
+    font-size: 32px;
+}
+
+.profile-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.profile-stats,
+.profile-servers,
+.profile-friends {
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 25px;
+}
+
+.profile-stats {
+    grid-column: 1 / -1;
+}
+
+.stats-display {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--gray-300);
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.servers-list,
+.friends-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.server-card,
+.friend-card {
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 15px;
+}
+
+.server-card h3 {
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+
+.server-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+    font-size: 12px;
+}
+
+.friend-info {
+    margin-bottom: 10px;
+}
+
+.friend-name {
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.friend-ggp {
+    font-size: 12px;
+    color: var(--gray-300);
+}
+
+/* ==================== TABLES ==================== */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+thead {
+    background-color: rgba(192, 39, 45, 0.1);
+    border-bottom: 2px solid var(--primary-color);
+}
+
+th {
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--gray-300);
+}
+
+td {
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+tbody tr:hover {
+    background-color: rgba(192, 39, 45, 0.05);
+}
+
+/* ==================== BADGES ==================== */
+
+.admin-badge,
+.user-badge,
+.level-badge,
+.status-badge,
+.priority-badge,
+.action-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.admin-HELPER {
+    background-color: rgba(23, 162, 184, 0.2);
+    color: var(--info-color);
+}
+
+.admin-JUNIOR {
+    background-color: rgba(0, 191, 255, 0.2);
+    color: var(--level-3-5);
+}
+
+.admin-ADMIN {
+    background-color: rgba(0, 0, 255, 0.2);
+    color: var(--level-6-8);
+}
+
+.admin-CHEATHUNTER {
+    background-color: rgba(75, 0, 130, 0.2);
+    color: var(--level-9-10);
+}
+
+.admin-DEP {
+    background-color: rgba(192, 39, 45, 0.2);
+    color: var(--primary-color);
+}
+
+.admin-OWNER {
+    background-color: rgba(255, 215, 0, 0.2);
+    color: #FFD700;
+}
+
+.user-badge {
+    background-color: rgba(128, 128, 128, 0.2);
+    color: var(--gray-300);
+}
+
+.level-badge {
+    background-color: transparent;
+}
+
+.status-badge {
+    padding: 6px 12px;
+}
+
+.status-open {
+    background-color: rgba(23, 162, 184, 0.2);
+    color: var(--info-color);
+}
+
+.status-in_progress {
+    background-color: rgba(255, 193, 7, 0.2);
+    color: var(--warning-color);
+}
+
+.status-resolved,
+.status-closed {
+    background-color: rgba(40, 167, 69, 0.2);
+    color: var(--success-color);
+}
+
+.status-active {
+    background-color: rgba(40, 167, 69, 0.2);
+    color: var(--success-color);
+}
+
+.status-banned {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: var(--danger-color);
+}
+
+.priority-low {
+    background-color: rgba(23, 162, 184, 0.2);
+    color: var(--info-color);
+}
+
+.priority-normal {
+    background-color: rgba(255, 193, 7, 0.2);
+    color: var(--warning-color);
+}
+
+.priority-high {
+    background-color: rgba(255, 165, 0, 0.2);
+    color: #FFA500;
+}
+
+.priority-urgent {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: var(--danger-color);
+}
+
+/* ==================== PAGINATION ==================== */
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.page-info {
+    color: var(--gray-300);
+    font-size: 14px;
+}
+
+/* ==================== FOOTER ==================== */
+
+.footer {
+    background-color: var(--secondary-color);
+    border-top: 2px solid var(--primary-color);
+    padding: 20px;
+    text-align: center;
+    color: var(--gray-300);
+    font-size: 12px;
+    margin-top: auto;
+}
+
+/* ==================== ADMIN DASHBOARD ==================== */
+
+.admin-dashboard h1 {
+    margin-bottom: 10px;
+}
+
+.admin-info {
+    margin-bottom: 30px;
+    color: var(--primary-color);
+}
+
+.admin-stats {
+    margin-bottom: 40px;
+}
+
+.admin-actions {
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 40px;
+}
+
+.recent-actions {
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 25px;
+}
+
+.recent-actions h2 {
+    margin-bottom: 20px;
+}
+
+/* ==================== USER DETAIL ==================== */
+
+.user-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.user-detail-header h1 {
+    flex: 1;
+    margin: 0;
+}
+
+.user-detail-content {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 30px;
+}
+
+.user-info,
+.user-servers,
+.admin-actions,
+.ban-history,
+.actions-history {
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 25px;
+}
+
+.user-info h2,
+.user-servers h2,
+.admin-actions h2,
+.ban-history h2,
+.actions-history h2 {
+    margin-bottom: 20px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-item .label {
+    font-size: 12px;
+    color: var(--gray-300);
+    margin-bottom: 5px;
+}
+
+.info-item .value {
+    font-weight: 500;
+}
+
+.user-servers .servers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.server-item {
+    background-color: var(--background-color);
+    padding: 10px;
+    border-radius: 4px;
+    border-left: 3px solid var(--primary-color);
+}
+
+.server-item p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+.user-is-banned {
+    background-color: rgba(220, 53, 69, 0.1);
+    padding: 15px;
+    border-left: 3px solid var(--danger-color);
+    margin-bottom: 15px;
+    color: var(--danger-color);
+}
+
+.ban-form,
+.role-form,
+.action-form {
+    background-color: var(--background-color);
+    padding: 20px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+/* ==================== MATCHMAKING ==================== */
+
+.matchmaking-container {
+    max-width: 500px;
+    margin: 40px auto;
+}
+
+.matchmaking-form {
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 30px;
+}
+
+.search-status,
+.match-found {
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+}
+
+.spinner {
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.opponent-card {
+    background-color: var(--background-color);
+    border: 1px solid var(--primary-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: left;
+}
+
+.match-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+/* ==================== LOBBIES ==================== */
+
+.lobbies-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.lobbies-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.lobby-card {
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.3s;
+}
+
+.lobby-card:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-4px);
+}
+
+.lobby-card h3 {
+    margin-bottom: 15px;
+    color: var(--primary-color);
+}
+
+.lobby-card p {
+    margin: 8px 0;
+    font-size: 14px;
+}
+
+/* ==================== SUPPORT ==================== */
+
+.support-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.ticket-form {
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 30px;
+    max-width: 600px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.ticket-detail {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 30px;
+}
+
+.ticket-header {
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.ticket-header h1 {
+    flex: 1;
+    margin: 0;
+    font-size: 28px;
+}
+
+.ticket-info,
+.ticket-description,
+.ticket-messages,
+.ticket-actions {
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 25px;
+}
+
+.ticket-info h2,
+.ticket-description h2,
+.ticket-messages h2,
+.ticket-actions h2 {
+    margin-bottom: 20px;
+}
+
+.messages-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.message {
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 15px;
+}
+
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 12px;
+}
+
+.message-date {
+    color: var(--gray-300);
+}
+
+.message-body {
+    color: var(--gray-300);
+    line-height: 1.6;
+}
+
+/* ==================== EMPTY STATE ==================== */
+
+.empty-message {
+    text-align: center;
+    color: var(--gray-300);
+    padding: 40px 20px;
+    font-size: 16px;
+}
+
+/* ==================== EDIT FORM ==================== */
+
+.edit-form {
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 30px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.servers-selection {
+    margin-bottom: 40px;
+}
+
+.servers-selection h2 {
+    margin-bottom: 10px;
+}
+
+.help-text {
+    color: var(--gray-300);
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.servers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.server-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.server-checkbox input[type="checkbox"] {
+    width: auto;
+}
+
+.server-checkbox label {
+    margin: 0;
+    cursor: pointer;
+    font-weight: normal;
+}
+
+.nickname-section {
+    grid-column: 1 / -1;
+}
+
+.nickname-section input {
+    max-width: 300px;
+}
+
+/* ==================== LEADERBOARD ==================== */
+
+.leaderboard-filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.leaderboard-table {
+    width: 100%;
+    margin-bottom: 30px;
+}
+
+.user-row:hover {
+    background-color: rgba(192, 39, 45, 0.05);
+}
+
+/* ==================== RESPONSIVE ==================== */
+
+@media (max-width: 768px) {
+    .nav-menu {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .hero-content h1 {
+        font-size: 32px;
+    }
+
+    .profile-content {
+        grid-template-columns: 1fr;
+    }
+
+    .servers-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-stats .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    table {
+        font-size: 12px;
+    }
+
+    th, td {
+        padding: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 0 15px;
+    }
+
+    .auth-form {
+        padding: 20px;
+    }
+
+    .hero-content h1 {
+        font-size: 24px;
+    }
+
+    .hero-content p {
+        font-size: 14px;
+    }
+
+    .btn {
+        width: 100%;
+    }
+
+    .ticket-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .ticket-header h1 {
+        font-size: 22px;
+    }
+
+    .profile-info {
+        flex-direction: column;
+        text-align: center;
+    }
+}

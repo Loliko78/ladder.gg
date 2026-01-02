@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Новый тикет - Ladder.gg{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Создать новый тикет</h1>
+    
+    <form method="POST" action="{{ url_for('main.new_ticket') }}" class="ticket-form">
+        <div class="form-group">
+            <label for="subject">Заголовок</label>
+            <input type="text" id="subject" name="subject" required minlength="5">
+        </div>
+
+        <div class="form-group">
+            <label for="description">Описание</label>
+            <textarea id="description" name="description" rows="6" required minlength="10"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="priority">Приоритет</label>
+            <select id="priority" name="priority">
+                <option value="low">Низкий</option>
+                <option value="normal" selected>Обычный</option>
+                <option value="high">Высокий</option>
+                <option value="urgent">Срочный</option>
+            </select>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Создать тикет</button>
+            <a href="{{ url_for('main.support') }}" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

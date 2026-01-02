@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Рейтинг - Ladder.gg{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Таблица рейтинга</h1>
+    
+    <div class="leaderboard-filters">
+        <a href="{{ url_for('main.leaderboard', sort='ggp', page=1) }}" class="btn {% if sort_by == 'ggp' %}btn-primary{% else %}btn-secondary{% endif %}">По GGP</a>
+        <a href="{{ url_for('main.leaderboard', sort='level', page=1) }}" class="btn {% if sort_by == 'level' %}btn-primary{% else %}btn-secondary{% endif %}">По уровню</a>
+    </div>
+
+    <table class="leaderboard-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Никнейм</th>
+                <th>GGP</th>
+                <th>Уровень</th>
+                <th>Роль</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users.items %}
+                <tr class="user-row">
+                    <td>{{ (users.page - 1) * 50 + loop.index }}</td>
+                    <td>
+                        <a href="{{ url_for('main.profile') }}">{{ user.username }}</a>
+                    </td>
+                    <td>{{ user.ggp }}</td>
+                    <td>
+                        <span class="level-badge" style="color: {{ user.get_level_color() }}">
+                            {{ user.level }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if user.admin_level > 0 %}
+                            <span class="admin-badge admin-{{ user.get_admin_level_name() }}">{{ user.get_admin_level_name() }}</span>
+                        {% else %}
+                            <span class="user-badge">USER</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        {% if users.has_prev %}
+            <a href="{{ url_for('main.leaderboard', sort=sort_by, page=users.prev_num) }}" class="btn btn-secondary">← Предыдущая</a>
+        {% endif %}
+        
+        <span class="page-info">Страница {{ users.page }} из {{ users.pages }}</span>
+        
+        {% if users.has_next %}
+            <a href="{{ url_for('main.leaderboard', sort=sort_by, page=users.next_num) }}" class="btn btn-secondary">Следующая →</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
